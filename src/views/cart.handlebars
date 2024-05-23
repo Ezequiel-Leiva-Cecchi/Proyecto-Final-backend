@@ -1,0 +1,21 @@
+<div class="cart-container">
+    <h1 class="cart-title">Your Cart</h1>
+    <table class="cart-table">
+        {{#each cart.products}}
+        <tr class="cart-item">
+            <td class="cart-item-name">{{this.name}}</td>
+            <td class="cart-item-price">{{this.price}}</td>
+            <td class="cart-item-quantity">{{this.quantity}}</td>
+            <td class="cart-item-total">{{this.price this.quantity}}</td>
+            <td class="cart-item-remove">
+                <form method="POST" action="/cart/remove/{{this.id}}">
+                    <button type="submit" class="remove-from-cart">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {{/each}}
+    </table>
+    <p class="cart-total">Total: {{cart.total}}</p>
+    <a href="/checkout" class="checkout-link">Proceed to Checkout</a>
+</div>
+<script src="js/cart.js"></script>
