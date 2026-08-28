@@ -1,39 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
-    <link rel="stylesheet" type="text/css" href="css/welcome.css">
-</head>
-
-<body>
-    <header>
-        <nav class="navbar">
-            <div class="container">
-                <h1 class="logo">Welcome {{user.first_name}} {{user.last_name}}!!!</h1>
-                <div class="navbar-links">
-                    
-                    <button id="cartBtn" type="button" class="cart-btn"><a href="/cart/{{user.cartId}}">Cart(0)</a></button>
-                    <button id="logoutBtn" type="button" class="logout-btn">Log out</button>
-                </div>
+<section class="store-hero">
+    <div class="shell hero-grid">
+        <div class="hero-copy">
+            <span class="eyebrow">E-commerce full-stack</span>
+            <h1>Una tienda hecha para mostrar lo que pasa <em>del otro lado.</em></h1>
+            <p>Nexo combina catálogo, autenticación, carrito, compra y una API documentada. El frontend acompaña al backend en vez de esconderlo.</p>
+            <div class="hero-actions">
+                <a class="button button-primary" href="/products">Explorar catálogo</a>
+                <a class="button button-ghost" href="/apidocs" target="_blank" rel="noopener">Ver API Docs ↗</a>
             </div>
-        </nav>
-    </header>
-
-    <div class="product-cards">
-        {{#each products}}
-        <div class="card">
-           <img src="{{this.imageUrl}}" alt="{{this.title}}">
-            <h2>{{this.title}}</h2>
-            
-            <p>Price: ${{this.price}}</p>
-            <button class="add-to-cart-btn" data-product-id="{{this.id}}">More details </button>
         </div>
+        <aside class="hero-console" aria-label="Resumen técnico">
+            <div class="console-top"><span></span><span></span><span></span><small>nexo-store/api</small></div>
+            <div class="console-body">
+                <p><span>GET</span> /api/products</p>
+                <p><span>POST</span> /api/cart/:id/p/:id</p>
+                <p><span>POST</span> /api/session/login</p>
+                <div class="console-status"><i></i> API preparada para operar</div>
+            </div>
+        </aside>
+    </div>
+    <div class="shell hero-metrics">
+        <span><strong>{{totalProducts}}</strong> productos cargados</span>
+        <span><strong>JWT + Session</strong> autenticación</span>
+        <span><strong>Swagger</strong> documentación</span>
+    </div>
+</section>
+
+<section class="catalog-section shell">
+    <div class="section-heading">
+        <div><span class="eyebrow">Selección</span><h2>Productos para probar el flujo completo.</h2></div>
+        <a class="text-link" href="/products">Ver catálogo completo →</a>
+    </div>
+    <div class="product-grid">
+        {{#each products}}
+            <article class="product-card">
+                <a class="product-media" href="/product/{{this.id}}">
+                    {{#if this.imageUrl}}<img src="{{this.imageUrl}}" alt="{{this.title}}" loading="lazy">{{else}}<span class="media-placeholder">N</span>{{/if}}
+                    <span class="category-chip">{{this.category}}</span>
+                </a>
+                <div class="product-info">
+                    <div><h3><a href="/product/{{this.id}}">{{this.title}}</a></h3><p>{{this.description}}</p></div>
+                    <div class="product-bottom"><strong>${{formatPrice this.price}}</strong><span>{{this.stock}} disponibles</span></div>
+                    <div class="card-actions">
+                        <a class="button button-small button-ghost" href="/product/{{this.id}}">Detalle</a>
+                        {{#if this.stock}}<button class="button button-small button-primary js-add-cart" type="button" data-product-id="{{this.id}}" data-cart-id="{{../cartId}}">Agregar</button>{{else}}<button class="button button-small" type="button" disabled>Sin stock</button>{{/if}}
+                    </div>
+                </div>
+            </article>
+        {{else}}
+            <div class="empty-state"><span>◇</span><h3>Todavía no hay productos</h3><p>La API está lista; agregá productos para poblar la tienda.</p><a class="button button-ghost" href="/apidocs">Abrir documentación</a></div>
         {{/each}}
     </div>
-    <script src="js/welcome.js"></script>
-</body>
+</section>
 
-</html>
+<section class="architecture-strip">
+    <div class="shell architecture-grid">
+        <div><span class="eyebrow">Arquitectura</span><h2>No es sólo una vidriera.</h2></div>
+        <div class="architecture-flow"><span>Views</span><i>→</i><span>Controllers</span><i>→</i><span>Services</span><i>→</i><span>DAO</span><i>→</i><span>MongoDB</span></div>
+    </div>
+</section>

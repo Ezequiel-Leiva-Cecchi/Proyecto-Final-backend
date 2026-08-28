@@ -1,11 +1,15 @@
-<div class="product-details">
-    <h1>{{this.title}}</h1>
-    <img src="{{this.imageUrl}}" alt="{{this.title}}">
-    <p>{{this.description}}</p>
-    <p>Price: ${{this.price}}</p>
-    <form method="POST" action="/cart/add/{{this.id}}">
-        <label for="quantity">Quantity:</label>
-        <input type="number" id="quantity" name="quantity" value="1" min="1">
-        <button type="submit">Add to Cart</button>
-    </form>
-</div>
+<section class="product-detail shell">
+    <a class="back-link" href="/products">← Volver al catálogo</a>
+    <div class="detail-grid">
+        <div class="detail-media">{{#if product.imageUrl}}<img src="{{product.imageUrl}}" alt="{{product.title}}">{{else}}<span class="media-placeholder">N</span>{{/if}}<span class="category-chip">{{product.category}}</span></div>
+        <div class="detail-copy">
+            <span class="eyebrow">Código {{product.code}}</span>
+            <h1>{{product.title}}</h1>
+            <p class="detail-description">{{product.description}}</p>
+            <div class="detail-price"><strong>${{formatPrice product.price}}</strong><span>{{product.stock}} unidades disponibles</span></div>
+            <div class="detail-features"><span>✓ Persistencia MongoDB</span><span>✓ Carrito con sesión</span><span>✓ Stock validado al comprar</span></div>
+            {{#if product.stock}}<button class="button button-primary button-wide js-add-cart" type="button" data-product-id="{{product.id}}" data-cart-id="{{cartId}}">Agregar al carrito</button>{{else}}<button class="button button-wide" disabled>Producto sin stock</button>{{/if}}
+            <p class="detail-note">La acción usa <code>POST /api/cart/:cid/p/:pid</code>.</p>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,41 @@
+<section class="page-hero shell">
+    <span class="eyebrow">Catálogo completo</span>
+    <h1>Buscá, ordená y recorré la tienda.</h1>
+    <p>Esta vista consume la misma capa de productos que expone la API.</p>
+</section>
+
+<section class="catalog-section shell catalog-page">
+    <form class="catalog-toolbar" method="get" action="/products">
+        <label class="search-field"><span>Buscar producto</span><input type="search" name="query" value="{{query}}" placeholder="Notebook, auriculares, teclado..." autocomplete="off"></label>
+        <label><span>Precio</span><select name="sort"><option value="">Sin ordenar</option><option value="asc" {{#if (eq sort "asc")}}selected{{/if}}>Menor a mayor</option><option value="desc" {{#if (eq sort "desc")}}selected{{/if}}>Mayor a menor</option></select></label>
+        <button class="button button-primary" type="submit">Aplicar</button>
+        {{#if query}}<a class="toolbar-clear" href="/products">Limpiar ×</a>{{/if}}
+    </form>
+
+    <div class="results-bar"><span>Página {{page}} de {{totalPages}}</span><span>Catálogo conectado a MongoDB</span></div>
+    <div class="product-grid">
+        {{#each products}}
+            <article class="product-card">
+                <a class="product-media" href="/product/{{this.id}}">
+                    {{#if this.imageUrl}}<img src="{{this.imageUrl}}" alt="{{this.title}}" loading="lazy">{{else}}<span class="media-placeholder">N</span>{{/if}}
+                    <span class="category-chip">{{this.category}}</span>
+                </a>
+                <div class="product-info">
+                    <div><h3><a href="/product/{{this.id}}">{{this.title}}</a></h3><p>{{this.description}}</p></div>
+                    <div class="product-bottom"><strong>${{formatPrice this.price}}</strong><span>{{this.stock}} disponibles</span></div>
+                    <div class="card-actions"><a class="button button-small button-ghost" href="/product/{{this.id}}">Detalle</a>{{#if this.stock}}<button class="button button-small button-primary js-add-cart" type="button" data-product-id="{{this.id}}" data-cart-id="{{../cartId}}">Agregar</button>{{/if}}</div>
+                </div>
+            </article>
+        {{else}}
+            <div class="empty-state"><span>⌕</span><h3>No encontramos productos</h3><p>Probá con otra búsqueda o volvé al catálogo completo.</p><a class="button button-ghost" href="/products">Ver todo</a></div>
+        {{/each}}
+    </div>
+
+    {{#if totalPages}}
+        <nav class="pagination" aria-label="Paginación">
+            {{#if prevPage}}<a class="button button-ghost" href="/products?page={{prevPage}}&query={{query}}&sort={{sort}}">← Anterior</a>{{else}}<span></span>{{/if}}
+            <span>{{page}} / {{totalPages}}</span>
+            {{#if nextPage}}<a class="button button-ghost" href="/products?page={{nextPage}}&query={{query}}&sort={{sort}}">Siguiente →</a>{{else}}<span></span>{{/if}}
+        </nav>
+    {{/if}}
+</section>

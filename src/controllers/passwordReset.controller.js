@@ -2,25 +2,23 @@ import * as passwordResetService from '../services/passwordResetService.js';
 
 export const sendEmailRecoveryPassword = async (req, res) => {
     try {
-        const { email, resetToken } = req.body;
-        await passwordResetService.sendEmailRecoveryPassword(email, resetToken);
-        return res.status(200).json({ message: 'Password recovery email sent successfully' });
+        await passwordResetService.sendEmailRecoveryPassword(req.body.email);
+        return res.status(200).json({
+            message: 'Si el correo existe, vas a recibir un enlace para recuperar tu contraseña.'
+        });
     } catch (error) {
-        console.error('Error sending password recovery email:', error);
-        return res.status(500).json({ error: 'Failed to send password recovery email' });
+        return res.status(500).json({ error: error.message });
     }
 };
 
 export const resetPassword = async (req, res) => {
     try {
-        const { resetToken } = req.params;
-        const { password } = req.body;
-        
-        await passwordResetService.resetPassword(resetToken, password);
-        
-        return res.status(200).json({ message: 'Password reset successfully' });
+        await passwordResetService.resetPassword(req.params.resetToken, req.body.password);
+        return res.status(200).json({
+            message: 'Contraseña actualizada correctamente.',
+            redirect: '/login'
+        });
     } catch (error) {
-        console.error('Error resetting password:', error);
-        return res.status(500).json({ error: 'Failed to reset password' });
+        return res.status(400).json({ error: error.message });
     }
 };

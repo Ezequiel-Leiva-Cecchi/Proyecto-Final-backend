@@ -7,7 +7,8 @@ import {
     renderCartPage,
     renderLoginPage,
     renderRegisterPage,
-    renderSendRecoveryEmailPage
+    renderSendRecoveryEmailPage,
+    renderResetPasswordPage
 } from '../controllers/views.controller.js';
 import { requireAuth, checkExistingUser, requireAdminAuth } from '../middlewares/authMiddleware.js';
 
@@ -19,7 +20,8 @@ viewsRoutes.get('/product/:pid', requireAuth, renderProductPage);
 viewsRoutes.get('/cart/:cid', requireAuth, renderCartPage);
 viewsRoutes.get('/login', checkExistingUser, renderLoginPage);
 viewsRoutes.get('/register', checkExistingUser, renderRegisterPage);
-viewsRoutes.get('/send-email', renderSendRecoveryEmailPage);
+viewsRoutes.get('/send-email', checkExistingUser, renderSendRecoveryEmailPage);
+viewsRoutes.get('/reset-password/:resetToken', checkExistingUser, renderResetPasswordPage);
 viewsRoutes.get('/admin', requireAuth, requireAdminAuth, renderAdminPage);
 
 export default viewsRoutes;

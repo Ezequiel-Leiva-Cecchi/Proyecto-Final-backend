@@ -1,21 +1,27 @@
-<div class="cart-container">
-    <h1 class="cart-title">Your Cart</h1>
-    <table class="cart-table">
-        {{#each cart.products}}
-        <tr class="cart-item">
-            <td class="cart-item-name">{{this.name}}</td>
-            <td class="cart-item-price">{{this.price}}</td>
-            <td class="cart-item-quantity">{{this.quantity}}</td>
-            <td class="cart-item-total">{{this.price this.quantity}}</td>
-            <td class="cart-item-remove">
-                <form method="POST" action="/cart/remove/{{this.id}}">
-                    <button type="submit" class="remove-from-cart">Remove</button>
-                </form>
-            </td>
-        </tr>
+<section class="page-hero shell cart-hero">
+    <span class="eyebrow">Compra</span>
+    <h1>Tu carrito.</h1>
+    <p>Productos persistidos en MongoDB y asociados a tu sesión.</p>
+</section>
+
+<section class="cart-layout shell">
+    <div class="cart-items">
+        {{#each products}}
+            <article class="cart-item" data-cart-item>
+                <div class="cart-thumb">{{#if this.imageUrl}}<img src="{{this.imageUrl}}" alt="{{this.title}}">{{else}}<span>N</span>{{/if}}</div>
+                <div class="cart-item-main"><span class="eyebrow">{{this.category}}</span><h2>{{this.title}}</h2><p>Cantidad: {{this.quantity}}</p></div>
+                <div class="cart-item-price"><strong>${{formatPrice this.subtotal}}</strong><span>${{formatPrice this.price}} c/u</span><button class="remove-button js-remove-cart" type="button" data-cart-id="{{../cartId}}" data-product-id="{{this.id}}">Quitar</button></div>
+            </article>
+        {{else}}
+            <div class="empty-state cart-empty"><span>◯</span><h3>Tu carrito está vacío</h3><p>Elegí algún producto para probar el flujo de compra completo.</p><a class="button button-primary" href="/products">Ir al catálogo</a></div>
         {{/each}}
-    </table>
-    <p class="cart-total">Total: {{cart.total}}</p>
-    <a href="/checkout" class="checkout-link">Proceed to Checkout</a>
-</div>
-<script src="js/cart.js"></script>
+    </div>
+    <aside class="cart-summary">
+        <span class="eyebrow">Resumen</span>
+        <div class="summary-row"><span>Productos</span><strong>{{cartCount}}</strong></div>
+        <div class="summary-row summary-total"><span>Total</span><strong>${{formatPrice total}}</strong></div>
+        {{#if products}}<button class="button button-primary button-wide js-purchase" type="button" data-cart-id="{{cartId}}">Finalizar compra</button>{{else}}<a class="button button-ghost button-wide" href="/products">Seguir comprando</a>{{/if}}
+        <p class="purchase-status" data-purchase-status></p>
+        <small>La compra descuenta stock sólo al confirmar y genera un ticket.</small>
+    </aside>
+</section>

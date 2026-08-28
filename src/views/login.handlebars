@@ -1,13 +1,15 @@
-<form method="POST" action="/api/session/login">
-    <h1>Log in</h1>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
-
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
-    <p>Did you forget your password?<a href="/send-email">Recovery password</a></p>
-    <p>You do not have an account? <a href="/register">Register</a></p>
-    <button type="submit">Sing in</button>
-    <button><a href="/api/session/github">Login with github</a></button>
-</form>
-<link rel="stylesheet" type="text/css" href="css/login.css">
+<section class="auth-shell shell">
+    <div class="auth-copy"><span class="eyebrow">Volvé a Nexo</span><h1>Tu sesión conecta la tienda con el backend.</h1><p>Ingresá para probar carrito, catálogo protegido y operaciones autenticadas.</p><div class="auth-points"><span>01 · Passport</span><span>02 · Session + MongoStore</span><span>03 · BCrypt</span></div></div>
+    <div class="auth-card">
+        <span class="eyebrow">Ingresar</span><h2>Bienvenido de nuevo.</h2>
+        <form data-api-form data-endpoint="/api/session/login" data-success="/">
+            <label>Email<input type="email" name="email" autocomplete="email" required placeholder="tu@email.com"></label>
+            <label>Contraseña<input type="password" name="password" autocomplete="current-password" minlength="6" required placeholder="••••••••"></label>
+            <div class="form-links"><a href="/send-email">¿Olvidaste tu contraseña?</a></div>
+            <button class="button button-primary button-wide" type="submit">Ingresar</button>
+            <p class="form-status" data-form-status></p>
+        </form>
+        <a class="button button-ghost button-wide github-button" href="/api/session/github">Continuar con GitHub ↗</a>
+        <p class="auth-switch">¿No tenés cuenta? <a href="/register">Creala acá</a></p>
+    </div>
+</section>

@@ -20,7 +20,8 @@ export const renderIndexPage = async (req, res, next) => {
         const cartContext = await getCartContext(req.session.user);
         return res.render('index', {
             title: 'Nexo Store',
-            products,
+            products: products.slice(0, 8),
+            totalProducts: products.length,
             ...cartContext
         });
     } catch (error) {
@@ -110,6 +111,10 @@ export const renderCartPage = async (req, res, next) => {
 export const renderLoginPage = (_req, res) => res.render('login', { title: 'Ingresar · Nexo Store' });
 export const renderRegisterPage = (_req, res) => res.render('register', { title: 'Crear cuenta · Nexo Store' });
 export const renderSendRecoveryEmailPage = (_req, res) => res.render('send-recovery-email', { title: 'Recuperar contraseña · Nexo Store' });
+export const renderResetPasswordPage = (req, res) => res.render('reset-password', {
+    title: 'Nueva contraseña · Nexo Store',
+    resetToken: req.params.resetToken
+});
 
 export const renderAdminPage = async (_req, res, next) => {
     try {

@@ -1,9 +1,11 @@
-<div class="container">
-    <form method="POST" action="/api/password-reset/send-email">
-        <h1>Password Recovery</h1>
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <button type="submit">Send Recovery Email</button>
-    </form>
-</div>
-<link rel="stylesheet" href="css/send-recove">
+<section class="auth-shell shell auth-single">
+    <div class="auth-card">
+        <span class="eyebrow">Recuperación</span><h1>Volvé a entrar.</h1><p class="muted">Escribí el correo de tu cuenta. Si existe, te mandamos un enlace válido durante una hora.</p>
+        <form data-api-form data-endpoint="/api/password-reset/send-email" data-no-redirect>
+            <label>Email<input type="email" name="email" autocomplete="email" required placeholder="tu@email.com"></label>
+            <button class="button button-primary button-wide" type="submit">Enviar enlace</button>
+            <p class="form-status" data-form-status></p>
+        </form>
+        <a class="text-link" href="/login">← Volver al ingreso</a>
+    </div>
+</section>

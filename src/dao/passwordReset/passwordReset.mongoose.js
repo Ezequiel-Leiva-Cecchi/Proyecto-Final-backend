@@ -2,23 +2,19 @@ import PasswordResetModel from '../../models/passwordReset.model.js';
 
 export class PasswordResetMongoose {
     async createResetToken(email, token) {
-        const resetToken = new PasswordResetModel({
-            email,
-            token,
-        });
-        await resetToken.save();
-        return resetToken.toObject();
+        await PasswordResetModel.deleteMany({ email: String(email).toLowerCase().trim() });
+        return PasswordResetModel.create({ email, token });
     }
 
     async findResetTokenByEmail(email) {
-        return await PasswordResetModel.findOne({ email }).lean();
+        return PasswordResetModel.findOne({ email: String(email).toLowerCase().trim() }).lean();
     }
 
     async findResetTokenByToken(token) {
-        return await PasswordResetModel.findOne({ token }).lean();
+        return PasswordResetModel.findOne({ token }).lean();
     }
 
     async deleteResetToken(token) {
-        return await PasswordResetModel.deleteOne({ token });
+        return PasswordResetModel.deleteOne({ token });
     }
 }

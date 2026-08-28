@@ -1,42 +1,44 @@
+import { randomBytes } from 'node:crypto';
 import { passwordResetDAO } from '../dao/passwordReset/indexPasswordReset.js';
-import { usersDAO } from '../dao/users/indexUsers.js'; 
-import { createHash } from '../utils/bcrypt.js';
-import transporter from "../config/nodemailer.config.js";
+import { usersDAO } from '../dao/users/indexUsers.js';
+import transporter from '../config/nodemailer.config.js';
 
-export const sendEmailRecoveryPassword = async (email, resetToken) => {
-    try {
-        await passwordResetDAO.createResetToken(email, resetToken);
+const appUrl = () => process.env.APP_URL || `http://localhost:${process.env.PORT || 8080}`;
 
-        const mailOptions = {
-            from: 'ezequielleivacecchi@gmail.com',
-            to: email,
-            subject: 'Password Recovery',
-            text: `Hi, we have received a request to reset your password. If you did not request this, you can ignore this email. Otherwise, click the following link to reset your password: http://localhost:8080/api/password-reset/reset/${resetToken}`
-        };
+export const sendEmailRecoveryPassword = async (email) => {
+    const normalizedEmail = String(email || '').toLowerCase().trim();
+    if (!normalizedEmail) throw new Error('Email requerido');
 
-        await transporter.sendMail(mailOptions);
-        console.log('Password recovery email sent successfully');
-    } catch (error) {
-        console.error('Error sending password recovery email:', error);
-        throw new Error('Error sending password recovery email');
+    const user = await usersDAO.findUserByEmail(normalizedEmail);
+    if (!user) {
+        return;
     }
+
+    const resetToken = randomBytes(32).toString('hex');
+    await passwordResetDAO.createResetToken(normalizedEmail, resetToken);
+
+    if (!process.env.GOOGLE_USER || !process.env.GOOGLE_PASSWORD) {
+        throw new Error('El servicio de email no está configurado');
+    }
+
+    await transporter.sendMail({
+        from: process.env.GOOGLE_USER,
+        to: normalizedEmail,
+        subject: 'Recuperá tu contraseña · Nexo Store',
+        text: `Recibimos una solicitud para cambiar tu contraseña. Abrí este enlace dentro de la próxima hora: ${appUrl()}/reset-password/${resetToken}`
+    });
 };
 
 export const resetPassword = async (resetToken, newPassword) => {
-    try {
-        const resetInfo = await passwordResetDAO.findResetTokenByToken(resetToken);
-        
-        if (!resetInfo) {
-            throw new Error('Invalid or expired reset token');
-        }
-        
-        const hashedPassword = createHash(newPassword);
-        await usersDAO.updateUserPassword(resetInfo.email, hashedPassword);
-        await passwordResetDAO.deleteResetToken(resetToken);
-        
-        console.log('Password reset successfully');
-    } catch (error) {
-        console.error('Error resetting password:', error);
-        throw new Error('Error resetting password');
+    if (!newPassword || newPassword.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
     }
+
+    const resetInfo = await passwordResetDAO.findResetTokenByToken(resetToken);
+    if (!resetInfo) {
+        throw new Error('El enlace es inválido o expiró');
+    }
+
+    await usersDAO.updateUserPassword(resetInfo.email, newPassword);
+    await passwordResetDAO.deleteResetToken(resetToken);
 };

@@ -1,11 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nexo Store, e-commerce full-stack construido con Node.js, Express y MongoDB.">
     <title>{{title}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-    {{{body}}}
+    <header class="site-header">
+        <nav class="nav shell" aria-label="Navegación principal">
+            <a class="brand" href="/" aria-label="Nexo Store, inicio"><span class="brand-symbol">N</span><span>Nexo<span class="brand-dot">.</span></span></a>
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Menú</button>
+            <div class="nav-links" id="main-nav">
+                {{#if user}}
+                    <a href="/">Inicio</a>
+                    <a href="/products">Catálogo</a>
+                    <a href="/apidocs" target="_blank" rel="noopener">API Docs ↗</a>
+                    {{#if (eq user.isAdmin "Admin")}}<a href="/admin">Admin</a>{{/if}}
+                    {{#if user.cartId}}<a class="cart-link" href="/cart/{{user.cartId}}">Carrito <span data-cart-count>{{cartCount}}</span></a>{{/if}}
+                    <button class="nav-action" type="button" data-logout>Salir</button>
+                {{else}}
+                    <a href="/apidocs" target="_blank" rel="noopener">API Docs ↗</a>
+                    <a href="/login">Ingresar</a>
+                    <a class="nav-pill" href="/register">Crear cuenta</a>
+                {{/if}}
+            </div>
+        </nav>
+    </header>
+    <main>{{{body}}}</main>
+    <footer class="site-footer">
+        <div class="shell footer-grid">
+            <div><a class="brand" href="/"><span class="brand-symbol">N</span><span>Nexo<span class="brand-dot">.</span></span></a><p>Backend, storefront y API en un mismo proyecto.</p></div>
+            <div><strong>Stack</strong><span>Node.js · Express</span><span>MongoDB · Handlebars</span></div>
+            <div><strong>Proyecto</strong><a href="/apidocs" target="_blank" rel="noopener">Documentación API</a><a href="https://github.com/Ezequiel-Leiva-Cecchi/Proyecto-Final-backend" target="_blank" rel="noopener">Código en GitHub ↗</a></div>
+        </div>
+    </footer>
+    <div class="toast" data-toast role="status" aria-live="polite"></div>
+    <script src="/js/store.js" defer></script>
 </body>
 </html>
