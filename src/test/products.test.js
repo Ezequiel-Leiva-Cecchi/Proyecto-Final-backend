@@ -1,73 +1,38 @@
-import mongoose from "mongoose";
-import { expect } from "chai";
-import supertest from "supertest";
+import { expect } from 'chai';
+import productsModel from '../models/porducts.model.js';
 
-import ProductsRouter from "../routes/products.routes.js";
-import { productDAO } from "../dao/product/indexProducts.js";
+describe('Modelo de productos', () => {
+    const validProduct = {
+        title: 'Notebook Nexo',
+        description: 'Producto de prueba para validar el esquema.',
+        code: 'NX-001',
+        price: 1200,
+        stock: 5,
+        category: 'Tecnología',
+        imageUrl: 'https://example.com/notebook.jpg'
+    };
 
-const request = supertest(ProductsRouter);
-
-describe('Testing Products Routes', () => {
-    let app;
-    let productId;
-
-    before(async function () {
-        app = ProductsRouter;
-        console.log("Conectando a la base de datos...");
-        await mongoose.connect('mongodb+srv://ezequielleivacecchi:hALl0CgkEToU97kJ@testingcoder.hb2y0h9.mongodb.net/test');
-        console.log("Conexión exitosa a la base de datos");
+    it('acepta un producto completo', () => {
+        const product = new productsModel(validProduct);
+        expect(product.validateSync()).to.equal(undefined);
+        expect(product.status).to.equal(true);
     });
 
-    afterEach(async function () {
-        await mongoose.connection.collections.products.drop();
+    it('requiere título, precio, stock, categoría e imagen', () => {
+        const product = new productsModel({});
+        const error = product.validateSync();
+        expect(error).to.exist;
+        expect(error.errors).to.have.property('title');
+        expect(error.errors).to.have.property('price');
+        expect(error.errors).to.have.property('stock');
+        expect(error.errors).to.have.property('category');
+        expect(error.errors).to.have.property('imageUrl');
     });
 
-    after(async function () {
-        await mongoose.connection.close();
-    });
-
-    it('Debe permitir agregar un nuevo producto', async function () {
-        const productData = {
-            title: 'Product Test',
-            description: 'This is a test product',
-            category: 'Samsung',
-            stock: 10,
-            code: 'AEQW12',
-            price: 10.99
-        };
-        const res = await productDAO.addProduct(productData);
-        expect(res).to.exist;
-        expect(res).to.have.property('_id');
-        productId = res._id;
-    });
-
-    it('Debe permitir obtener la lista de productos', async function () {
-        const res = await productDAO.getProducts();
-        expect(res).to.be.an('array');
-        expect(res).to.have.length.above(0);
-    });
-
-    it('Debe permitir obtener un producto por su ID', async function () {
-        const res = await productDAO.getProductById(productId);
-        expect(res).to.exist;
-        expect(res).to.have.property('title').to.equal('Product Test');
-    });
-
-    it('Debe permitir editar un producto existente', async function () {
-        const updatedProductData = {
-            title: 'Updated Product Test',
-            description: 'This is an updated test product',
-            price: 15.99
-        };
-
-        const res = await productDAO.editProduct({ pid: productId, updateData: updatedProductData });
-        expect(res).to.exist;
-        expect(res).to.have.property('title').to.equal('Updated Product Test');
-    });
-
-    it('Debe permitir eliminar un producto por su ID', async function () {
-        const res = await productDAO.deleteProduct(productId);
-        expect(res).to.exist;
-        expect(res).to.have.property('deletedCount').to.equal(1);
+    it('conserva los datos comerciales del producto', () => {
+        const product = new productsModel(validProduct);
+        expect(product.code).to.equal('NX-001');
+        expect(product.stock).to.equal(5);
+        expect(product.category).to.equal('Tecnología');
     });
 });

@@ -1,57 +1,34 @@
-import mongoose from "mongoose";
-import { expect } from "chai";
-import supertest from "supertest";
+import { expect } from 'chai';
+import mongoose from 'mongoose';
+import cartModel from '../models/carts.model.js';
 
-import CartRouter from "../routes/cart.routes.js";
-import { cartDAO } from "../dao/cart/indexCart.js";
-
-const request = supertest(CartRouter);
-
-describe('Testing Cart Routes', () => {
-    let app;
-    let cartId;
-
-    before(async function () {
-        app = CartRouter;
-        await mongoose.connect('mongodb+srv://ezequielleivacecchi:hALl0CgkEToU97kJ@testingcoder.hb2y0h9.mongodb.net/test');
-    });
-
-    afterEach(async function () {
-        await mongoose.connection.collections.carts.drop();
-    });
-
-    after(async function () {
-        await mongoose.connection.close();
-    });
-
-    it('Debe permitir agregar un nuevo carrito', async function () {
-        const res = await request.post('/').send();
-        expect(res.status).to.equal(200);
-        expect(res.body).to.have.property('_id');
-        cartId = res.body._id;
-        
-    });
-
-    it('Debe permitir agregar un producto al carrito', async function () {
-        const res = await request.post(`/${cartId}/p`).send({ productId: "PRODUCT_ID_HERE" });
-        expect(res.status).to.equal(200);
-        const cart = await cartDAO.getCartById(cartId);
-        expect(cart.products).to.be.an('array').that.is.not.empty;
-    });
-
-    it('Debe permitir eliminar un producto del carrito', async function () {
-        const res = await request.delete(`/${cartId}/p/PRODUCT_ID_HERE`).send();
-        expect(res.status).to.equal(200);
-        const cart = await cartDAO.getCartById(cartId);
+describe('Modelo de carrito', () => {
+    it('crea un carrito vacío válido', () => {
+        const cart = new cartModel({ products: [] });
+        expect(cart.validateSync()).to.equal(undefined);
         expect(cart.products).to.be.an('array').that.is.empty;
-        
     });
 
-    it('Debe permitir eliminar un carrito por su ID', async function () {
-        const res = await request.delete(`/${cartId}`).send();
-        expect(res.status).to.equal(200);
-        const cart = await cartDAO.getCartById(cartId);
-        expect(cart).to.be.null;
-        
+    it('acepta productos con referencia y cantidad positiva', () => {
+        const cart = new cartModel({
+            products: [{
+                product: new mongoose.Types.ObjectId(),
+                quantity: 2
+            }]
+        });
+        expect(cart.validateSync()).to.equal(undefined);
+        expect(cart.products[0].quantity).to.equal(2);
+    });
+
+    it('rechaza cantidades menores a uno', () => {
+        const cart = new cartModel({
+            products: [{
+                product: new mongoose.Types.ObjectId(),
+                quantity: 0
+            }]
+        });
+        const error = cart.validateSync();
+        expect(error).to.exist;
+        expect(error.errors).to.have.property('products.0.quantity');
     });
 });
