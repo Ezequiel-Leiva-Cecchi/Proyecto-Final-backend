@@ -1,75 +1,58 @@
-import { usersModel } from "../../models/users.model.js";
-import { createHash } from "../../utils/bcrypt.js";
+import { usersModel } from '../../models/users.model.js';
+import { createHash } from '../../utils/bcrypt.js';
 
 export class usersMongoose {
     async getUserById(id) {
-        return await usersModel.findOne({ _id: id }).lean({ virtuals: true });
+        return usersModel.findById(id).lean({ virtuals: true });
     }
 
-    async updateUserCart(userId, cid) {
-        try {
-            const user = await usersModel.findOneAndUpdate(
-                { _id: userId },
-                { cartId: cartId },
-                { new: true }
-            );
-            return user;
-        } catch (error) {
-            console.error(error);
-            throw new Error('Error updating user cart');
+    async updateUserCart(userId, cartId) {
+        const user = await usersModel.findByIdAndUpdate(
+            userId,
+            { cartId },
+            { new: true }
+        );
+        if (!user) {
+            throw new Error('User not found');
         }
+        return user;
     }
 
     async createUser(userData) {
-        try {
-            if (!userData.last_name) {
-                userData.last_name = 'Not Provided';
-            }
-            console.log(userData);
-            const newUser = await usersModel.create(userData);
-            return newUser.toObject({ virtuals: true });
-        } catch (error) {
-            console.error(error);
-            throw new Error('Error creating user');
-        }
+        const data = {
+            ...userData,
+            last_name: userData.last_name || 'No informado'
+        };
+        const newUser = await usersModel.create(data);
+        return newUser.toObject({ virtuals: true });
     }
 
     async findUserByEmail(email) {
-        const user = await usersModel.findOne({ email: email }); 
-        if (!user) {
-            return null;
-        } else {
-            return user;
-        }
-
+        if (!email) return null;
+        return usersModel.findOne({ email: String(email).toLowerCase().trim() });
     }
 
     async getAllUsers() {
-        try {
-            const user = await usersModel.find({ first_name, last_name, email });
-            return user;
-        } catch (error) {
-            console.error(error);
-            throw new Error('Error getting user');
-        }
+        return usersModel.find().select('-password').sort({ createdAt: -1 }).lean({ virtuals: true });
     }
 
     async updateUserPassword(email, newPassword) {
-        try {
-            const hashedPassword = createHash(newPassword);
-            const updatedUser = await usersModel.findOneAndUpdate(
-                { email: email },
-                { password: hashedPassword },
-                { new: true }
-            );
-            return updatedUser;
-        } catch (error) {
-            console.error(error);
-            throw new Error('Error updating user password');
+        const hashedPassword = createHash(newPassword);
+        return usersModel.findOneAndUpdate(
+            { email: String(email).toLowerCase().trim() },
+            { password: hashedPassword },
+            { new: true }
+        );
+    }
+
+    async updateUserRole(userId, isAdmin) {
+        if (!['User', 'Admin'].includes(isAdmin)) {
+            throw new Error('Invalid role');
         }
+        return usersModel.findByIdAndUpdate(userId, { isAdmin }, { new: true });
     }
 
     async deleteInactiveUsers() {
-
+        return [];
     }
 }

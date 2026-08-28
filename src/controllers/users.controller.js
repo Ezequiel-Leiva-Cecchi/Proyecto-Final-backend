@@ -1,97 +1,88 @@
-import passport from "passport";
 import * as usersService from '../services/usersServices.js';
-import { usersDAO } from "../dao/users/indexUsers.js";
-import {cartDAO} from "../dao/cart/indexCart.js"
+import { usersDAO } from '../dao/users/indexUsers.js';
+import { cartDAO } from '../dao/cart/indexCart.js';
+
+const toPlainUser = (user) => {
+    const plain = typeof user?.toObject === 'function' ? user.toObject({ virtuals: true }) : { ...user };
+    if (plain) delete plain.password;
+    return plain;
+};
+
+const ensureUserCart = async (user) => {
+    const plain = toPlainUser(user);
+    if (plain.cartId || plain.cid) {
+        return plain;
+    }
+    const cart = await cartDAO.createCart();
+    const updated = await usersDAO.updateUserCart(plain._id || plain.id, cart._id);
+    return toPlainUser(updated);
+};
+
 export const register = async (req, res) => {
     try {
-        const userData = req.body;
-        const newUser = await usersService.register(userData);
-        
-        await cartDAO.createCart(newUser._id);
-
-        res.status(201).json({ message: 'Usuario registrado exitosamente', user: newUser });
-    } catch (error) {
-        console.error("Error al registrar usuario:", error);
-        if (error.message.includes('El correo electrónico ya está en uso')) {
-            return res.status(400).json({ error: error.message });
-        }
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
-};
-
-export const login = async (req, res, next) => {
-    try {
-        const { email, password } = req.body; 
-        const existingUser = await usersService.login({ email, password }); 
-        if (!existingUser) {
-            throw new Error('Invalid email or password');
-        }
-        req.session.user = existingUser;
-        console.log("User logged in successfully:", existingUser);
-        res.status(200).json({ msg: "User logged in successfully" });
-    } catch (error) {
-        console.error("Error logging in user:", error);
-        res.status(401).json({ error: error.message }); 
-    }
-};
-
-
-export const logout = async (req, res, next) => {
-    try {
-        req.logout((err) => {
-            if (err) {
-                console.error("Error logging out:", err);
-                return next(err);
-            }
-            req.session.destroy(() => {
-                console.log("User logged out successfully");
-                res.status(200).json({ msg: "User logged out successfully" });
-            });
+        const newUser = await usersService.register(req.body);
+        const userWithCart = await ensureUserCart(newUser);
+        return res.status(201).json({
+            message: 'Usuario registrado exitosamente',
+            user: userWithCart,
+            redirect: '/login'
         });
     } catch (error) {
-        console.error("Error logging out:", error);
-        res.status(400).json({ error: error.message });
+        const status = error.message.includes('ya está en uso') || error.message.includes('6 caracteres') ? 400 : 500;
+        return res.status(status).json({ error: error.message });
     }
 };
 
-export const loginWithGithub = (req, res, next) => {
-    passport.authenticate('github', (err, user, info) => {
-        if (err) {
-            console.error("Error logging in with Github:", err);
-            res.status(400).json({ error: err.message });
-            return;
-        }
-        if (!user) {
-            console.error("Failed to login with Github");
-            res.status(400).json({ error: "Failed to login with Github" });
-            return;
-        }
-        req.session.user = user;
-        console.log("User logged in with Github successfully:", req.session.user);
-        res.status(200).json({ msg: "User logged in with Github successfully" });
-    })(req, res, next);
-};
-
-export const createAdmin = async (req, res, next) => {
+export const login = async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.isAdmin !== true) {
-            return res.status(403).json({ error: 'Forbidden. Admin access required.' });
-        }
-        const { first_name, last_name, email, password } = req.body;
-        const existingUser = await usersService.registerAdmin({ first_name, last_name, email, password });
-        res.status(201).json({ message: 'Admin user created successfully', user: existingUser });
+        const authenticatedUser = req.user || await usersService.login(req.body);
+        const userWithCart = await ensureUserCart(authenticatedUser);
+        req.session.user = userWithCart;
+        return res.status(200).json({
+            message: 'Sesión iniciada correctamente',
+            user: userWithCart,
+            redirect: '/'
+        });
     } catch (error) {
-        console.error("Error creating admin user:", error);
-        res.status(400).json({ error: error.message });
+        return res.status(401).json({ error: error.message });
     }
 };
 
-export const getAllUsers = async(req,res) => {
+export const logout = async (req, res, next) => {
+    req.logout((logoutError) => {
+        if (logoutError) return next(logoutError);
+        req.session.destroy((sessionError) => {
+            if (sessionError) return next(sessionError);
+            res.clearCookie('connect.sid');
+            return res.status(200).json({ message: 'Sesión cerrada correctamente', redirect: '/login' });
+        });
+    });
+};
+
+export const loginWithGithub = async (req, res, next) => {
+    try {
+        const userWithCart = await ensureUserCart(req.user);
+        req.session.user = userWithCart;
+        return res.redirect('/');
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const createAdmin = async (req, res) => {
+    try {
+        const newAdmin = await usersService.registerAdmin(req.body);
+        return res.status(201).json({ message: 'Administrador creado correctamente', user: toPlainUser(newAdmin) });
+    } catch (error) {
+        return res.status(400).json({ error: error.message });
+    }
+};
+
+export const getAllUsers = async (_req, res) => {
     try {
         const users = await usersDAO.getAllUsers();
-        res.status(200).json(users);
-    } catch (error) {
-        console.error('Error obteniendo usuarios:', error);
-        res.status(500).json({error:'Error interno del servidor'});
+        return res.status(200).json(users);
+    } catch (_error) {
+        return res.status(500).json({ error: 'Error interno del servidor' });
     }
 };

@@ -1,112 +1,77 @@
-import { cartDAO } from '../dao/cart/indexCart.js'; 
+import { randomUUID } from 'node:crypto';
+import { cartDAO } from '../dao/cart/indexCart.js';
 import { productDAO } from '../dao/product/indexProducts.js';
+import ticketModel from '../models/ticket.model.js';
 
-export const createCart = async () => {
-    try {
-        const newCart = await cartDAO.createCart();
-        console.log("Cart created successfully:", newCart);
-        return newCart; 
-    } catch (error) {
-        console.error("Error creating cart:", error);
-        throw new Error('Failed to create cart'); 
-    }
-};
+const productIdOf = (item) => item?.product?._id?.toString?.() || item?.product?.toString?.();
 
-export const getCartById = async (cid) => {
-    try {
-        console.log("Fetching cart with ID:", cid); 
-        const cart = await cartDAO.getCartById(cid);
-        console.log("Retrieved cart:", cart);  
-        return cart;
-    } catch (error) {
-        console.error("Error fetching cart:", error); 
-        throw new Error('Failed to get cart');
-    }
-};
+export const createCart = () => cartDAO.createCart();
+export const getCartById = (cid) => cartDAO.getCartById(cid);
 
 export const addProductToCart = async (cid, pid) => {
-    try {
-        const cart = await cartDAO.getCartById(cid);
-        const product = await productDAO.getProductById(pid);
-        
-        if (!cart || !product) {
-            throw new Error('Cart or product not found');
-        }
+    const cart = await cartDAO.getCartById(cid);
+    const product = await productDAO.getProductById(pid);
 
-        if (product.stock < 1) {
-            throw new Error('Product out of stock');
-        }
+    if (!cart || !product) throw new Error('Cart or product not found');
+    if (!product.status || product.stock < 1) throw new Error('Product out of stock');
 
-        const existProductInCartIndex = cart.products.findIndex(item => item.product.toString() === pid);
-        if (existProductInCartIndex >= 0) {
-            cart.products[existProductInCartIndex].quantity++;
+    const index = cart.products.findIndex((item) => productIdOf(item) === String(pid));
+    const nextQuantity = index >= 0 ? cart.products[index].quantity + 1 : 1;
+    if (nextQuantity > product.stock) throw new Error('No hay stock suficiente');
+
+    if (index >= 0) cart.products[index].quantity = nextQuantity;
+    else cart.products.push({ product: product._id, quantity: 1 });
+
+    await cart.save();
+    return cart;
+};
+
+export const deleteCart = (cid) => cartDAO.deleteCart(cid);
+export const deleteProductInCart = ({ cid, pid }) => cartDAO.deleteProductCart(cid, pid);
+
+export const finalizePurchase = async (cid, purchaser) => {
+    const cart = await cartDAO.getCartById(cid);
+    if (!cart) throw new Error('Cart not found');
+
+    let totalAmount = 0;
+    const failedProducts = [];
+    const purchasedProducts = new Set();
+
+    for (const item of cart.products) {
+        const product = item.product;
+        if (!product) continue;
+
+        if (product.stock >= item.quantity) {
+            product.stock -= item.quantity;
+            await product.save();
+            totalAmount += item.quantity * product.price;
+            purchasedProducts.add(product._id.toString());
         } else {
-            cart.products.push({ 
-                product: product._id, 
-                quantity: 1,
-                title: product.title,
-                price: product.price,
-                imageUrl: product.imageUrl,
-                code: product.code
-            });
+            failedProducts.push(product._id.toString());
         }
-
-        product.stock--; 
-
-        await cart.save(); 
-    } catch (error) {
-        console.error(error)
-        throw new Error('Failed to add product to cart: ' + error.message);
     }
-};
 
+    cart.products = cart.products.filter((item) => !purchasedProducts.has(productIdOf(item)));
+    await cart.save();
 
-export const deleteCart = async (cid) => {
-    try {
-        await cartDAO.deleteCart(cid);
-    } catch (error) {
-        console.log(error);
-        throw new Error('Failed to delete cart');
-    }
-};
-
-export const deleteProductInCart = async ({ cid, pid }) => {
-    try {
-        await cartDAO.deleteProductCart( cid, pid );
-    } catch (error) {
-        throw new Error('Failed to delete product from cart');
-    }
-};
-
-export const finalizePurchase = async (cid) => {
-    try {
-        const cart = await cartDAO.getCartById(cid);
-        if (!cart) {
-            throw new Error('Cart not found');
-        }
-
-        let totalAmount = 0;
-        const failedProducts = [];
-
-        for (const item of cart.products) {
-            const product = await productDAO.getProductById(item.product._id);
-            if (product.stock >= item.quantity) {
-                product.stock -= item.quantity;
-                await product.save();
-                totalAmount += item.quantity * product.price;
-            } else {
-                failedProducts.push(product._id);
+    let ticket = null;
+    if (totalAmount > 0) {
+        ticket = await ticketModel.create({
+            cartId: cart._id,
+            code: randomUUID(),
+            purchaseDatetime: new Date(),
+            amount: totalAmount,
+            purchaser: {
+                email: purchaser?.email || 'sin-email@local',
+                name: [purchaser?.first_name, purchaser?.last_name].filter(Boolean).join(' ') || purchaser?.email || 'Cliente'
             }
-        }
-
-        if (failedProducts.length > 0) {
-            return { totalAmount, failedProducts };
-        }
-
-        await cartDAO.deleteCart(cid);
-
-        return { totalAmount, failedProducts };
-    } catch (error) {
-        throw new Error('Failed to finalize purchase: ' + error.message);
+        });
     }
+
+    return {
+        totalAmount,
+        failedProducts,
+        purchasedCount: purchasedProducts.size,
+        ticket: ticket ? { id: ticket._id.toString(), code: ticket.code } : null
+    };
 };

@@ -1,37 +1,49 @@
-import mongoose from "mongoose";
-import leanVirtuals from "mongoose-lean-virtuals";
+import mongoose from 'mongoose';
+import leanVirtuals from 'mongoose-lean-virtuals';
 
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
     first_name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     last_name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        lowercase: true,
+        trim: true
     },
-    cid:{
-         type: mongoose.Schema.Types.ObjectId,  
-         ref: 'cart'  
+    cartId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Cart'
+    },
+    cid: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Cart'
     },
     password: {
         type: String,
-        required: true,
+        required: true
     },
     isAdmin: {
-        type: String
+        type: String,
+        enum: ['User', 'Admin'],
+        default: 'User'
     }
-});
+}, { timestamps: true });
 
-userSchema.virtual('id').get(function (){
+userSchema.virtual('id').get(function () {
     return this._id.toString();
 });
-userSchema.set('toJSON',{virtuals: true});
-userSchema.set('toObject',{virtual:true});
+
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
 userSchema.plugin(leanVirtuals);
-export  const usersModel = mongoose.model('users', userSchema);
+
+export const usersModel = mongoose.model('users', userSchema);

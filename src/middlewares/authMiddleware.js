@@ -1,28 +1,44 @@
-export const requireAuth = (req, res, next) => {
-    if (!req.session.user) {
+const getSessionUser = (req) => req.session?.user || req.user || null;
+
+const respondUnauthenticated = (req, res) => {
+    if (req.accepts?.('html')) {
         return res.redirect('/login');
     }
-    next();
+    return res.status(401).json({ error: 'Authentication required' });
+};
+
+export const requireAuth = (req, res, next) => {
+    if (!getSessionUser(req)) {
+        return respondUnauthenticated(req, res);
+    }
+    return next();
 };
 
 export const checkExistingUser = (req, res, next) => {
-    if (req.session.user) {
+    if (getSessionUser(req)) {
         return res.redirect('/');
     }
-    next();
+    return next();
 };
 
 export const requireAdminAuth = (req, res, next) => {
-    console.log()
-    if (req.session?.user?.role !== "Admin" ) {
-        return next();
+    const user = getSessionUser(req);
+    if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
     }
-    return res.status(403).json({ error: 'Forbidden. Admin access required.' });
+    if (user.isAdmin !== 'Admin') {
+        return res.status(403).json({ error: 'Forbidden. Admin access required.' });
+    }
+    return next();
 };
 
 export const requireUserAuth = (req, res, next) => {
-    if (req.session?.user?.role !== "User" ){
-        return next();
+    const user = getSessionUser(req);
+    if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
     }
-    return res.status(403).json({ error: 'Forbidden. User access required.' });
+    if (!['User', 'Admin'].includes(user.isAdmin)) {
+        return res.status(403).json({ error: 'Forbidden. User access required.' });
+    }
+    return next();
 };

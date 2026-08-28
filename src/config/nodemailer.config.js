@@ -1,13 +1,10 @@
 import nodemailer from 'nodemailer';
 
-const secretKey = process.env.GOOGLE_PASSWORD;
 const transporter = nodemailer.createTransport({
-    service: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
+    service: 'gmail',
     auth: {
-        user: 'ezequielleivacecchi@gmail.com',
-        pass: secretKey
+        user: process.env.GOOGLE_USER,
+        pass: process.env.GOOGLE_PASSWORD
     }
 });
 

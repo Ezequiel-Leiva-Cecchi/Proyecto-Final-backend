@@ -1,76 +1,73 @@
 import { usersDAO } from '../dao/users/indexUsers.js';
-import { createHash } from '../utils/bcrypt.js';
+import { createHash, isValidPassword } from '../utils/bcrypt.js';
+
+const normalizeEmail = (email) => String(email || '').toLowerCase().trim();
 
 export const register = async (userData) => {
-    try {
-        const { email, password } = userData;
+    const email = normalizeEmail(userData.email);
+    const password = userData.password;
 
-        // Validar correo electrónico
-        if (!email) {
-            throw new Error('Correo electrónico requerido');
-        }
-
-        // Verificar si el usuario ya existe en la base de datos
-        const existingUser = await usersDAO.findUserByEmail(email);
-        if (existingUser) {
-            throw new Error('El correo electrónico ya está en uso');
-        }
-
-        // Validar contraseña
-        if (!password || password.length < 6) {
-            throw new Error('La contraseña debe tener al menos 6 caracteres');
-        }
-
-        const isAdmin = (email === "adminCoder@coder.com" && password === "adminCod3r123") ? "Admin" : "User";
-        const hashedPassword = createHash(password);
-
-        const newUser = {
-            ...userData,
-            isAdmin: isAdmin,
-            password: hashedPassword
-        };
-
-        const createdUser = await usersDAO.createUser(newUser);
-        return createdUser;
-    } catch (error) {
-        throw error;
+    if (!email) {
+        throw new Error('Correo electrónico requerido');
     }
+
+    const existingUser = await usersDAO.findUserByEmail(email);
+    if (existingUser) {
+        throw new Error('El correo electrónico ya está en uso');
+    }
+
+    if (!password || password.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    const bootstrapAdminEmail = normalizeEmail(process.env.BOOTSTRAP_ADMIN_EMAIL);
+    const role = bootstrapAdminEmail && bootstrapAdminEmail === email ? 'Admin' : 'User';
+
+    return usersDAO.createUser({
+        ...userData,
+        email,
+        isAdmin: role,
+        password: createHash(password)
+    });
 };
 
-
-export const login = async (userData) => {
-    try {
-        const existingUser = await usersDAO.findUserByEmail(userData.email);
-        if (!existingUser) {
-            throw new Error('Invalid email or password');
-        }
-        console.log("User logged in successfully:", existingUser);
-        return existingUser;
-    } catch (error) {
-        console.error("Error logging in user:", error);
-        throw new Error('Failed to login');
+export const registerAdmin = async (userData) => {
+    const email = normalizeEmail(userData.email);
+    if (!email || !userData.password || userData.password.length < 6) {
+        throw new Error('Email y contraseña válida son obligatorios');
     }
+    const existingUser = await usersDAO.findUserByEmail(email);
+    if (existingUser) {
+        throw new Error('El correo electrónico ya está en uso');
+    }
+    return usersDAO.createUser({
+        ...userData,
+        email,
+        isAdmin: 'Admin',
+        password: createHash(userData.password)
+    });
+};
+
+export const login = async ({ email, password }) => {
+    const existingUser = await usersDAO.findUserByEmail(normalizeEmail(email));
+    if (!existingUser || !password || !isValidPassword(existingUser, password)) {
+        throw new Error('Correo electrónico o contraseña incorrectos');
+    }
+    return existingUser;
 };
 
 export const logout = async (req) => {
-    try {
-        await req.session.destroy();
-        console.log("User logged out successfully");
-    } catch (error) {
-        console.error("Error logging out:", error);
-        throw new Error('Failed to logout');
-    }
+    await new Promise((resolve, reject) => {
+        req.session.destroy((error) => error ? reject(error) : resolve());
+    });
 };
 
-export const loginWithGithub = async (userData) => {
-    return userData;
-};
+export const loginWithGithub = async (userData) => userData;
+
 export const upgradeUserToPremium = async (userId) => {
-    try {
-        const updatedUser = await usersDAO.upgradeToPremium(userId);
-        return updatedUser;
-    } catch (error) {
-        console.error(error);
-        throw new Error(error.message);
+    const updatedUser = await usersDAO.upgradeToPremium?.(userId);
+    if (!updatedUser) {
+        throw new Error('User not found');
     }
+    return updatedUser;
 };
